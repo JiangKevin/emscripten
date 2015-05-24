@@ -1289,6 +1289,36 @@ var LibraryGL = {
 #endif
 
 #if USE_WEBGL2
+  glDrawRangeElements__sig: 'viiiiii',
+  glDrawRangeElements: function(mode, start, end, count, type, indices) {
+#if FULL_ES2
+    var buf;
+    if (!GL.currElementArrayBuffer) {
+      var size = GL.calcBufLength(1, type, 0, count);
+      buf = GL.getTempIndexBuffer(size);
+      GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, buf);
+      GLctx.bufferSubData(GLctx.ELEMENT_ARRAY_BUFFER,
+                               0,
+                               HEAPU8.subarray(indices, indices + size));
+      // the index is now 0
+      indices = 0;
+    }
+
+    // bind any client-side buffers
+    GL.preDrawHandleClientVertexAttribBindings(count);
+#endif
+
+    GLctx.drawRangeElements(mode, start, end, count, type, indices);
+
+#if FULL_ES2
+    GL.postDrawHandleClientVertexAttribBindings(count);
+
+    if (!GL.currElementArrayBuffer) {
+      GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, null);
+    }
+#endif
+  },
+
   glInvalidateFramebuffer__sig: 'viii',
   glInvalidateFramebuffer: function(target, numAttachments, attachments) {
     var list = [];
