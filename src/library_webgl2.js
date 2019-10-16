@@ -223,7 +223,9 @@ var LibraryWebGL2 = {
     }
   },
 
-  // Queries
+  // Queries, together with GLES EXT_disjoint_timer_query aliases (because on
+  // GLES3 you can use the EXT-suffixed query functions, but on WebGL 2 you're
+  // supposed to use the core ones)
   glGenQueries__sig: 'vii',
   glGenQueries__deps: ['_glGenObject'],
   glGenQueries: function(n, ids) {
@@ -233,6 +235,7 @@ var LibraryWebGL2 = {
 #endif
       );
   },
+  glGenQueriesEXT: 'glGenQueries',
 
   glDeleteQueries__sig: 'vii',
   glDeleteQueries: function(n, ids) {
@@ -244,6 +247,7 @@ var LibraryWebGL2 = {
       GL.queries[id] = null;
     }
   },
+  glDeleteQueriesEXT: 'glDeleteQueries',
 
   glIsQuery__sig: 'ii',
   glIsQuery: function(id) {
@@ -251,6 +255,7 @@ var LibraryWebGL2 = {
     if (!query) return 0;
     return GLctx['isQuery'](query);
   },
+  glIsQueryEXT: 'glIsQuery',
 
   glBeginQuery__sig: 'vii',
   glBeginQuery: function(target, id) {
@@ -259,6 +264,7 @@ var LibraryWebGL2 = {
 #endif
     GLctx['beginQuery'](target, GL.queries[id]);
   },
+  glBeginQueryEXT: 'glBeginQuery',
 
   glGetQueryiv__sig: 'viii',
   glGetQueryiv: function(target, pname, params) {
@@ -273,6 +279,7 @@ var LibraryWebGL2 = {
     }
     {{{ makeSetValue('params', '0', 'GLctx[\'getQuery\'](target, pname)', 'i32') }}};
   },
+  glGetQueryivEXT: 'glGetQueryiv',
 
   glGetQueryObjectuiv__sig: 'viii',
   glGetQueryObjectuiv: function(id, pname, params) {
@@ -298,6 +305,8 @@ var LibraryWebGL2 = {
     }
     {{{ makeSetValue('params', '0', 'ret', 'i32') }}};
   },
+  glGetQueryObjectivEXT: 'glGetQueryObjectuiv',
+  glGetQueryObjectuivEXT: 'glGetQueryObjectuiv',
 
   // Sampler objects
   glGenSamplers__sig: 'vii',

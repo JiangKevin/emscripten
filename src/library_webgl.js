@@ -959,7 +959,13 @@ var LibraryGL = {
         GL.acquireDrawBuffersExtension(GLctx);
       }
 
+#if USE_WEBGL2
+      // On WebGL 2, the extension should be used together with the core query
+      // APIs.
+      GLctx.disjointTimerQueryExt = GLctx.getExtension("EXT_disjoint_timer_query_webgl2");
+#else
       GLctx.disjointTimerQueryExt = GLctx.getExtension("EXT_disjoint_timer_query");
+#endif
 
       // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
       // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
@@ -1754,7 +1760,11 @@ var LibraryGL = {
     GLctx.bufferSubData(target, offset, HEAPU8.subarray(data, data+size));
   },
 
-  // Queries EXT
+  // Queries EXT. These are EXT_disjoint_timer_query on WebGL 1, but replaced
+  // with EXT_disjoint_timer_query_webgl2 on WebGL 2. Because, coming from GLES
+  // one might want to use the EXT-suffixed functions on both WebGL 1 and WebGL
+  // 2, we simply alias those to core APIs there.
+#if !USE_WEBGL2 // WebGL2 alias defined in library_webgl2.js
   glGenQueriesEXT__sig: 'vii',
   glGenQueriesEXT: function(n, ids) {
     for (var i = 0; i < n; i++) {
@@ -1773,7 +1783,9 @@ var LibraryGL = {
       {{{ makeSetValue('ids', 'i*4', 'id', 'i32') }}};
     }
   },
+#endif
 
+#if !USE_WEBGL2 // WebGL2 alias defined in library_webgl2.js
   glDeleteQueriesEXT__sig: 'vii',
   glDeleteQueriesEXT: function(n, ids) {
     for (var i = 0; i < n; i++) {
@@ -1784,14 +1796,18 @@ var LibraryGL = {
       GL.timerQueriesEXT[id] = null;
     }
   },
+#endif
 
+#if !USE_WEBGL2 // WebGL2 alias defined in library_webgl2.js
   glIsQueryEXT__sig: 'ii',
   glIsQueryEXT: function(id) {
     var query = GL.timerQueriesEXT[id];
     if (!query) return 0;
     return GLctx.disjointTimerQueryExt['isQueryEXT'](query);
   },
+#endif
 
+#if !USE_WEBGL2 // WebGL2 alias defined in library_webgl2.js
   glBeginQueryEXT__sig: 'vii',
   glBeginQueryEXT: function(target, id) {
 #if GL_ASSERTIONS
@@ -1799,20 +1815,31 @@ var LibraryGL = {
 #endif
     GLctx.disjointTimerQueryExt['beginQueryEXT'](target, GL.timerQueriesEXT[id]);
   },
+#endif
 
+#if !USE_WEBGL2 // WebGL2 alias defined in library_webgl2.js
   glEndQueryEXT__sig: 'vi',
   glEndQueryEXT: function(target) {
     GLctx.disjointTimerQueryExt['endQueryEXT'](target);
   },
+#endif
 
+  // This one is either from EXT_disjoint_timer_query on WebGL 1 (taking a
+  // WebGLTimerQueryEXT) or from EXT_disjoint_timer_query_webgl2 (taking a
+  // WebGLQuery)
   glQueryCounterEXT__sig: 'vii',
   glQueryCounterEXT: function(id, target) {
 #if GL_ASSERTIONS
     GL.validateGLObjectID(GL.timerQueriesEXT, id, 'glQueryCounterEXT', 'id');
 #endif
+#if USE_WEBGL2
+    GLctx.disjointTimerQueryExt['queryCounterEXT'](GL.queries[id], target);
+#else
     GLctx.disjointTimerQueryExt['queryCounterEXT'](GL.timerQueriesEXT[id], target);
+#endif
   },
 
+#if !USE_WEBGL2 // WebGL2 alias defined in library_webgl2.js
   glGetQueryivEXT__sig: 'viii',
   glGetQueryivEXT: function(target, pname, params) {
     if (!params) {
@@ -1826,7 +1853,9 @@ var LibraryGL = {
     }
     {{{ makeSetValue('params', '0', 'GLctx.disjointTimerQueryExt[\'getQueryEXT\'](target, pname)', 'i32') }}};
   },
+#endif
 
+#if !USE_WEBGL2 // WebGL2 alias defined in library_webgl2.js
   glGetQueryObjectivEXT__sig: 'viii',
   glGetQueryObjectivEXT: function(id, pname, params) {
     if (!params) {
@@ -1852,7 +1881,11 @@ var LibraryGL = {
     {{{ makeSetValue('params', '0', 'ret', 'i32') }}};
   },
   glGetQueryObjectuivEXT: 'glGetQueryObjectivEXT',
+#endif
 
+  // This one has no equivalent in core WebGL 2, so instead calling into
+  // getQueryParameter with WebGLQuery on WebGL 2 and getQueryObjectEXT with
+  // WebGLTimerQueryEXT on WebGL 1
   glGetQueryObjecti64vEXT__sig: 'viii',
   glGetQueryObjecti64vEXT: function(id, pname, params) {
     if (!params) {
@@ -1867,8 +1900,13 @@ var LibraryGL = {
 #if GL_ASSERTIONS
     GL.validateGLObjectID(GL.timerQueriesEXT, id, 'glGetQueryObjecti64vEXT', 'id');
 #endif
+#if USE_WEBGL2
+    var query = GL.queries[id];
+    var param = GLctx['getQueryParameter'](query, pname);
+#else
     var query = GL.timerQueriesEXT[id];
     var param = GLctx.disjointTimerQueryExt['getQueryObjectEXT'](query, pname);
+#endif
     var ret;
     if (typeof param == 'boolean') {
       ret = param ? 1 : 0;
