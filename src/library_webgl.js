@@ -959,12 +959,14 @@ var LibraryGL = {
         GL.acquireDrawBuffersExtension(GLctx);
       }
 
-#if USE_WEBGL2
-      // On WebGL 2, the extension should be used together with the core query
-      // APIs.
-      GLctx.disjointTimerQueryExt = GLctx.getExtension("EXT_disjoint_timer_query_webgl2");
-#else
       GLctx.disjointTimerQueryExt = GLctx.getExtension("EXT_disjoint_timer_query");
+#if USE_WEBGL2
+      // On WebGL 2, the extension is replaced with an alternative that's based
+      // on core query APIs. HOWEVER, Firefox implements only the WebGL 1
+      // version and thus we look for the WebGL 2 version only if the WebGL 1
+      // version isn't present. See also https://bugzilla.mozilla.org/show_bug.cgi?id=1328882
+      if (!GLctx.disjointTimerQueryExt)
+        GLctx.disjointTimerQueryExt = GLctx.getExtension("EXT_disjoint_timer_query_webgl2");
 #endif
 
       // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
